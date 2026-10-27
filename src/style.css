@@ -547,38 +547,6 @@ svg {
   place-items: center;
   pointer-events: none;
 }
-.stage {
-  position: absolute;
-  width: calc(var(--center) * 0.9);
-  height: calc(var(--center) * 0.9);
-  max-width: 100%;
-  border-radius: 50%;
-  border: 2px dashed var(--line);
-}
-.stage {
-  background-image: var(--comb);
-  background-size: 28px 48.5px;
-  background-position: center;
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-.arena[data-item='honey'] .stage {
-  border-style: solid;
-  border-color: #f5a623;
-  background-color: rgba(245, 166, 35, 0.16);
-  box-shadow: 0 0 40px rgba(245, 166, 35, 0.35), inset 0 0 30px rgba(245, 166, 35, 0.25);
-}
-.arena[data-item='bee'] .stage {
-  border-style: solid;
-  border-color: var(--danger);
-  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
-  box-shadow: 0 0 40px color-mix(in srgb, var(--danger) 35%, transparent);
-  animation: alarm 0.5s ease-in-out infinite alternate;
-}
-@keyframes alarm {
-  to {
-    box-shadow: 0 0 60px color-mix(in srgb, var(--danger) 55%, transparent), inset 0 0 26px color-mix(in srgb, var(--danger) 30%, transparent);
-  }
-}
 .waitdots {
   display: none;
   gap: 10px;

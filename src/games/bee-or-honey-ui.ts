@@ -73,7 +73,6 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
         )
         .join('')}
       <div class="center">
-        <div class="stage"></div>
         <div class="waitdots"><i></i><i></i><i></i></div>
         <div class="ring"></div>
         <div class="item"></div>
