@@ -168,7 +168,11 @@ async function run(browser, scheme) {
     await sleep(250);
   }
   await page.waitForSelector('.win-overlay', { timeout: 4000 });
+  await sleep(700); // let confetti fly
   await page.screenshot({ path: `${SHOTS}/${scheme}-10-win.png` });
+  await page.touchscreen.tap(30, 422);
+  await sleep(150);
+  check(`[${scheme}] pause is blocked on the win screen`, (await page.locator('.pause-overlay').count()) === 0);
   const winText = await page.locator('.win-text').last().innerText();
   check(`[${scheme}] win screen names the winner`, winText.includes('Blue wins'), winText);
   await page.click('[data-act="rematch"]');
@@ -208,6 +212,25 @@ async function runIpad(browser) {
   await context.close();
 }
 
+async function runLandscape(browser) {
+  console.log('\n=== light · iPhone landscape 844x390 ===');
+  const context = await browser.newContext({
+    viewport: { width: 844, height: 390 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+  });
+  const page = await context.newPage();
+  await startGame(page, 4, 3, 7);
+  await waitItem(page, 'bee');
+  await page.screenshot({ path: `${SHOTS}/landscape-bee.png` });
+  check('[landscape] arena does not scroll the page', await noPageScroll(page));
+  const boxes = await page.locator('.pad').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()));
+  check('[landscape] pads at least 80px tall', boxes.every((b) => b.height >= 80), boxes.map((b) => Math.round(b.height)).join(','));
+  await context.close();
+}
+
 async function runOffline(browser) {
   console.log('\n=== offline ===');
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -233,6 +256,7 @@ try {
   await run(browser, 'dark');
   await run(browser, 'light');
   await runIpad(browser);
+  await runLandscape(browser);
   await runOffline(browser);
   await browser.close();
 } catch (e) {

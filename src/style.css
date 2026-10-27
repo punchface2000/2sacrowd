@@ -1,5 +1,6 @@
 /* ---------- theme ---------- */
 :root {
+  --comb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48.5' viewBox='0 0 28 48.5'%3E%3Cpath d='M14 0 L28 8.08 V24.25 L14 32.33 L0 24.25 V8.08 Z M14 32.33 V48.5 M0 24.25 L0 48.5 M28 24.25 V48.5' fill='none' stroke='%23f5a623' stroke-opacity='.09' stroke-width='1'/%3E%3C/svg%3E");
   --bg: #15130f;
   --surface: #211d17;
   --surface-2: #2b261e;
@@ -263,7 +264,7 @@ svg {
 
 /* ---------- game arena ---------- */
 .arena {
-  --center: clamp(170px, 34dvh, 380px);
+  --center: clamp(130px, min(34dvh, 70vw), 380px);
   --gap: 10px;
   position: absolute;
   inset: 0;
@@ -283,15 +284,21 @@ svg {
   min-height: 0;
   border-radius: 30px;
   border: 2.5px solid color-mix(in srgb, var(--pc) 55%, transparent);
-  background: color-mix(in srgb, var(--pc) 16%, var(--surface));
+  background: radial-gradient(120% 90% at 50% 50%, color-mix(in srgb, var(--pc) 22%, var(--surface)), color-mix(in srgb, var(--pc) 10%, var(--surface)));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   color: var(--pc);
   touch-action: none;
   cursor: pointer;
   overflow: hidden;
-  transition: background 0.12s, filter 0.2s;
+  transition: border-color 0.12s, box-shadow 0.12s;
 }
+/* "go" state: pads light up while something is in the middle */
 .arena[data-phase='showing'] .pad {
-  background: color-mix(in srgb, var(--pc) 30%, var(--surface));
+  border-color: var(--pc);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pc) 40%, transparent), 0 0 24px color-mix(in srgb, var(--pc) 35%, transparent);
+}
+.arena[data-phase='showing'] .pawicon {
+  transform: scale(1.12);
 }
 .pad:active {
   transform: scale(0.985);
@@ -324,16 +331,25 @@ svg {
   justify-content: center;
   gap: 8px;
 }
+/* score pips are little honeycomb cells */
 .pips i {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2.5px solid color-mix(in srgb, var(--pc) 70%, transparent);
-  background: transparent;
+  --hex: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+  position: relative;
+  width: 22px;
+  height: 19px;
+  clip-path: var(--hex);
+  background: color-mix(in srgb, var(--pc) 65%, transparent);
 }
-.pips i.on {
-  background: var(--pc);
-  border-color: var(--pc);
+.pips i::after {
+  content: '';
+  position: absolute;
+  inset: 2.5px;
+  clip-path: var(--hex);
+  background: color-mix(in srgb, var(--pc) 10%, var(--surface));
+  transition: background 0.2s;
+}
+.pips i.on::after {
+  background: linear-gradient(160deg, #ffd36b, #f5a623 60%, #d9860f);
 }
 .pips i.bump {
   animation: bump 0.4s cubic-bezier(0.2, 1.8, 0.4, 1);
@@ -539,10 +555,29 @@ svg {
   border-radius: 50%;
   border: 2px dashed var(--line);
 }
-.arena[data-phase='showing'] .stage {
+.stage {
+  background-image: var(--comb);
+  background-size: 28px 48.5px;
+  background-position: center;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.arena[data-item='honey'] .stage {
   border-style: solid;
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-color: #f5a623;
+  background-color: rgba(245, 166, 35, 0.16);
+  box-shadow: 0 0 40px rgba(245, 166, 35, 0.35), inset 0 0 30px rgba(245, 166, 35, 0.25);
+}
+.arena[data-item='bee'] .stage {
+  border-style: solid;
+  border-color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--danger) 35%, transparent);
+  animation: alarm 0.5s ease-in-out infinite alternate;
+}
+@keyframes alarm {
+  to {
+    box-shadow: 0 0 60px color-mix(in srgb, var(--danger) 55%, transparent), inset 0 0 26px color-mix(in srgb, var(--danger) 30%, transparent);
+  }
 }
 .waitdots {
   display: none;
@@ -759,5 +794,129 @@ svg {
   .sweat,
   .zzz {
     animation: none;
+  }
+}
+
+/* ---------- polish ---------- */
+.screen {
+  background-image: radial-gradient(90% 50% at 50% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%), var(--comb);
+  background-size: auto, 28px 48.5px;
+}
+.card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface) 60%);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transition: transform 0.12s, border-color 0.12s;
+}
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.card .art {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+.rules {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  counter-reset: r;
+  display: grid;
+  gap: 10px;
+}
+.rules li {
+  counter-increment: r;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.rules li::before {
+  content: counter(r);
+  flex: 0 0 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  color: var(--accent);
+  font-weight: 750;
+  font-size: 13px;
+}
+.setup .tag {
+  margin-bottom: 18px;
+}
+.win-bear {
+  position: relative;
+  width: 120px;
+}
+.win-bear .crown {
+  position: absolute;
+  left: 50%;
+  top: -26px;
+  width: 60px;
+  translate: -50% 0;
+  rotate: -8deg;
+  animation: crown 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes crown {
+  from {
+    transform: translateY(-40px) scale(0.4);
+    opacity: 0;
+  }
+}
+.win-text {
+  text-shadow: 0 4px 24px color-mix(in srgb, var(--pc) 40%, transparent);
+  animation: wintext 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes wintext {
+  from {
+    scale: 0.5;
+    opacity: 0;
+  }
+}
+.confetti {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 12px;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  pointer-events: none;
+  animation: confetti 1.6s cubic-bezier(0.15, 0.7, 0.4, 1) forwards;
+}
+@keyframes confetti {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2) rotate(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 90px)) scale(var(--s)) rotate(var(--r));
+    opacity: 0;
+  }
+}
+.float {
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--surface) 70%, transparent);
+  paint-order: stroke fill;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  /* phone on its side: smaller pips and float text so short pads stay clean */
+  .pips {
+    top: 8px;
+  }
+  .pips i {
+    width: 16px;
+    height: 14px;
+  }
+  .float {
+    font-size: 38px;
+  }
+  .pawicon,
+  .tired-ui .droop {
+    width: 46px;
+  }
+  .tired-ui .bar {
+    bottom: 8px;
   }
 }

@@ -157,7 +157,8 @@ export class BeeOrHoney {
     if (this.phase === 'resolved' || this.phase === 'over') return { kind: 'ignored' };
     if (this.isTired(player, now)) return { kind: 'blocked' };
 
-    if (this.phase === 'waiting') {
+    // a tap timestamped before the item appeared is early, even if it is processed later
+    if (this.phase === 'waiting' || now < this.showAt) {
       const recent = this.earlyTaps[player].filter((t) => now - t < this.config.spamWindowMs);
       recent.push(now);
       if (recent.length >= this.config.spamTaps) {
@@ -171,8 +172,9 @@ export class BeeOrHoney {
 
     // phase === 'showing': first valid tap wins the round
     const item = this.item as Item;
-    const delta = item === 'honey' ? 1 : -1;
-    this.scores[player] = Math.max(this.config.minScore, this.scores[player] + delta);
+    const before = this.scores[player];
+    this.scores[player] = Math.max(this.config.minScore, before + (item === 'honey' ? 1 : -1));
+    const delta = this.scores[player] - before; // actual change (0 if a bee hits a score at the floor)
     this.outcome = { player, item };
     const won = this.scores[player] >= this.config.target;
     if (won) {

@@ -25,6 +25,7 @@ export interface GameDef {
   name: string;
   tagline: string;
   art: string; // inline SVG for the menu card
+  rules: string[]; // short "how to play" lines for the setup screen
   options: GameOption[];
   mount: (root: HTMLElement, ctx: MountContext) => MountedGame;
 }

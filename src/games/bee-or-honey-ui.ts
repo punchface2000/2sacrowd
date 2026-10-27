@@ -1,5 +1,5 @@
 import { BeeOrHoney, type Item } from './bee-or-honey';
-import { BEAR, BEE, HONEY_JAR, PAW_PRINT, SWEAT, pawSvg } from '../art';
+import { BEAR, BEE, CROWN, HONEY_JAR, PAW_PRINT, SWEAT, pawSvg } from '../art';
 import type { GameDef, MountContext, MountedGame } from './types';
 
 const COLORS = ['#ef5b5b', '#4c8dff', '#3ecf8e', '#a66bff'];
@@ -46,7 +46,8 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
   let pauseStart = 0;
   let paused = false;
   const origin = performance.now();
-  const now = () => performance.now() - origin - pausedTotal;
+  const toGame = (t: number) => t - origin - pausedTotal;
+  const now = () => toGame(performance.now());
 
   const game = new BeeOrHoney({ players, target }, seed, now());
   const slots = slotsFor(players);
@@ -152,9 +153,9 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
     const dist = Math.hypot(dx, dy);
     const angle = (Math.atan2(dx, -dy) * 180) / Math.PI;
 
-    const W = 96;
-    const handR = W * 0.42;
-    const handOffset = handR + 6; // hand centre below the top of the element
+    const W = Math.round(Math.min(110, Math.max(84, C.height * 0.36)));
+    const handR = W * 0.4;
+    const handOffset = handR + 8; // hand centre below the top of the element (matches pawSvg)
     const H = Math.ceil(dist + handOffset + 60);
     // y: translation along the arm axis. hand centre distance d from the start => y = H - d - handOffset
     const yAt = (d: number) => H - d - handOffset;
@@ -248,10 +249,13 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
   }
 
   // ---------- input ----------
-  function onTap(player: number): void {
+  function onTap(player: number, eventTime: number): void {
     ctx.sound.unlock();
     if (paused || !overlay.hidden) return;
-    const t = now();
+    // use the moment the finger landed (event timestamp), not when this code runs,
+    // so near-simultaneous grabs are judged fairly
+    const real = performance.now();
+    const t = toGame(eventTime > 0 && eventTime <= real && real - eventTime < 500 ? eventTime : real);
     const before = game.getState();
     const r = game.tap(player, t);
     const pad = pads[player];
@@ -271,7 +275,7 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
         if (shownRound !== before.round || !itemEl.firstElementChild) showItem(r.item, false);
         playPaw(player, r.item);
         flashRing(player, r.item === 'bee');
-        floatText(player, r.item === 'honey' ? '+1' : '-1', r.item === 'bee');
+        floatText(player, r.item === 'honey' ? '+1' : r.delta < 0 ? '-1' : 'Ouch!', r.item === 'bee');
         later(() => ctx.sound.play(r.item === 'honey' ? 'honey' : 'sting'), 260);
         later(renderPips, 260);
         if (r.item === 'bee') later(() => restart(pad, 'stung'), 260);
@@ -287,7 +291,7 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
     if (!pad) return;
     pad.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      onTap(p);
+      onTap(p, e.timeStamp);
     });
     pad.addEventListener('contextmenu', (e) => e.preventDefault());
   });
@@ -302,13 +306,32 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
     overlay.innerHTML = `
       <div class="win-text flip">${name} wins!</div>
       <div class="win-mid">
-        <div class="win-bear">${BEAR}</div>
+        <div class="win-bear"><span class="crown">${CROWN}</span>${BEAR}</div>
         <div class="win-actions">
           <button class="btn primary" data-act="rematch">Play again</button>
           <button class="btn" data-act="menu">Menu</button>
         </div>
       </div>
       <div class="win-text">${name} wins!</div>`;
+    confetti(COLORS[winner]);
+  }
+
+  /** Burst of hexagons in the winner's color and honey gold, falling from the middle. */
+  function confetti(color: string): void {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const n = reduce ? 0 : 36;
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement('i');
+      c.className = 'confetti';
+      const a = Math.random() * Math.PI * 2;
+      const r = 120 + Math.random() * 220;
+      c.style.cssText =
+        `--x:${Math.cos(a) * r}px;--y:${Math.sin(a) * r}px;--r:${Math.random() * 540 - 270}deg;` +
+        `--s:${0.6 + Math.random() * 0.9};background:${i % 3 === 0 ? '#f5a623' : color};` +
+        `animation-delay:${Math.random() * 120}ms`;
+      c.addEventListener('animationend', () => c.remove());
+      overlay.appendChild(c);
+    }
   }
 
   function showPause(): void {
@@ -324,7 +347,11 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
   }
 
   function resetUi(): void {
+    // drop pending effects from the previous game (e.g. a scheduled win screen)
+    timers.forEach((id) => clearTimeout(id));
+    timers.length = 0;
     clearCenter();
+    overlay.querySelectorAll('.confetti').forEach((c) => c.remove());
     fx.innerHTML = '';
     pads.forEach((pad) => pad?.classList.remove('tired', 'stung', 'poke', 'nope'));
     renderPips();
@@ -373,12 +400,12 @@ function mount(root: HTMLElement, ctx: MountContext): MountedGame {
 
   pauseBtn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (!overlay.hidden && !paused) return; // win screen is showing
+    if (!overlay.hidden || game.getState().phase === 'over') return; // win screen is showing or coming
     setPaused(true);
   });
 
   const onVisibility = () => {
-    if (document.hidden && overlay.hidden) setPaused(true);
+    if (document.hidden && overlay.hidden && game.getState().phase !== 'over') setPaused(true);
   };
   document.addEventListener('visibilitychange', onVisibility);
 
@@ -433,6 +460,12 @@ export const beeOrHoneyGame: GameDef = {
   name: 'Bee or Honey',
   tagline: 'Grab the honey, dodge the bee. First to the target wins.',
   art: HONEY_JAR,
+  rules: [
+    'Lay the device flat between you. Each player gets a pad.',
+    'Honey jar: tap first for +1.',
+    'Angry bee: hands off, it stings for −1.',
+    'Spam taps before anything shows and your paw gets tired for 3 s.',
+  ],
   options: [
     { id: 'players', label: 'Players', values: [2, 3, 4], default: 4 },
     { id: 'target', label: 'Points to win', values: [3, 5, 7], default: 3 },

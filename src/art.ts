@@ -39,24 +39,60 @@ export const BEE = `
 </svg>`;
 
 /** Bear arm with a paw at the top. The arm is as long as `h` px, the hand is a fixed size. */
-export function pawSvg(w: number, h: number, color = '#8a5a3b'): string {
+let pawId = 0;
+export function pawSvg(w: number, h: number): string {
+  const id = `paw${++pawId}`;
   const cx = w / 2;
-  const armW = w * 0.4;
-  const handR = w * 0.42;
-  const handY = handR + 6;
-  const toe = w * 0.09;
+  const armW = w * 0.46;
+  const handR = w * 0.4;
+  const handY = handR + 8;
+  const toe = w * 0.085;
+  const pad = '#efc4a4';
+  const dark = '#5e3a24';
+  const L = cx - armW / 2;
+  // fur tufts along the wrist where the arm meets the hand
+  const tuftY = handY + handR * 0.82;
+  const tufts = [-0.62, -0.2, 0.22, 0.62]
+    .map((k) => `<path d="M${cx + k * handR - 7} ${tuftY} q7 12 14 0" fill="url(#${id}g)"/>`)
+    .join('');
+  // claws peek out above each toe
+  const claw = (x: number, y: number) =>
+    `<path d="M${x - 3} ${y - toe * 0.7} q3 -9 6 0 z" fill="#f6efe6" stroke="${dark}" stroke-width="1"/>`;
+  const toes: [number, number, number][] = [
+    [-0.56, -0.42, 1],
+    [-0.2, -0.68, 1.08],
+    [0.2, -0.68, 1.08],
+    [0.56, -0.42, 1],
+  ];
   return `
 <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <rect x="${cx - armW / 2}" y="${handY}" width="${armW}" height="${h - handY}" fill="${color}"/>
-  <rect x="${cx - armW / 2}" y="${handY}" width="${armW * 0.28}" height="${h - handY}" fill="#fff" fill-opacity=".1"/>
-  <circle cx="${cx}" cy="${handY}" r="${handR}" fill="${color}"/>
-  <ellipse cx="${cx}" cy="${handY + handR * 0.2}" rx="${handR * 0.5}" ry="${handR * 0.42}" fill="#e0b79a"/>
-  <circle cx="${cx - handR * 0.52}" cy="${handY - handR * 0.4}" r="${toe}" fill="#e0b79a"/>
-  <circle cx="${cx - handR * 0.18}" cy="${handY - handR * 0.64}" r="${toe * 1.05}" fill="#e0b79a"/>
-  <circle cx="${cx + handR * 0.18}" cy="${handY - handR * 0.64}" r="${toe * 1.05}" fill="#e0b79a"/>
-  <circle cx="${cx + handR * 0.52}" cy="${handY - handR * 0.4}" r="${toe}" fill="#e0b79a"/>
+  <defs>
+    <linearGradient id="${id}g" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#a06c48"/><stop offset=".45" stop-color="#8a5a3b"/><stop offset="1" stop-color="#6b4229"/>
+    </linearGradient>
+  </defs>
+  <rect x="${L}" y="${handY}" width="${armW}" height="${h - handY}" rx="${armW / 2}" fill="url(#${id}g)" stroke="${dark}" stroke-width="2"/>
+  ${tufts}
+  ${toes.map(([dx, dy]) => claw(cx + dx * handR, handY + dy * handR - toe * 0.5)).join('')}
+  <circle cx="${cx}" cy="${handY}" r="${handR}" fill="url(#${id}g)" stroke="${dark}" stroke-width="2"/>
+  <path d="M${cx - handR * 0.55} ${handY + handR * 0.25} q${handR * 0.55} ${-handR * 0.62} ${handR * 1.1} 0 q${-handR * 0.05} ${handR * 0.48} ${-handR * 0.55} ${handR * 0.5} q${-handR * 0.5} 0 ${-handR * 0.55} ${-handR * 0.5} z" fill="${pad}"/>
+  ${toes
+    .map(
+      ([dx, dy, k]) =>
+        `<ellipse cx="${cx + dx * handR}" cy="${handY + dy * handR}" rx="${toe * k}" ry="${toe * k * 1.15}" fill="${pad}"/>`,
+    )
+    .join('')}
+  <ellipse cx="${cx - handR * 0.35}" cy="${handY - handR * 0.1}" rx="${handR * 0.12}" ry="${handR * 0.07}" fill="#fff" fill-opacity=".25"/>
 </svg>`;
 }
+
+/** Small crown for the winner screen. */
+export const CROWN = `
+<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M6 44 L10 12 L26 28 L40 6 L54 28 L70 12 L74 44 Z" fill="#ffc83d" stroke="#b07a10" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="6" y="40" width="68" height="8" rx="3" fill="#f5a623" stroke="#b07a10" stroke-width="3"/>
+  <circle cx="40" cy="30" r="5" fill="#ef5b5b"/><circle cx="22" cy="34" r="3.5" fill="#4c8dff"/><circle cx="58" cy="34" r="3.5" fill="#3ecf8e"/>
+</svg>`;
 
 /** Paw print icon, uses currentColor. */
 export const PAW_PRINT = `

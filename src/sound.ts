@@ -15,7 +15,7 @@ export class Sound {
         if (!Ctor) return;
         this.ctx = new Ctor();
       }
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      if (this.ctx.state !== 'running') void this.ctx.resume();
     } catch {
       /* no audio available */
     }

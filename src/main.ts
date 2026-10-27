@@ -10,12 +10,22 @@ const settings = loadSettings();
 const sound = new Sound();
 sound.enabled = settings.sound;
 
-// audio can only start after a user gesture on iOS
-document.addEventListener('pointerdown', () => sound.unlock(), { passive: true });
+// audio can only start after a user gesture on iOS; Safari is pickier about which
+// gesture events count, so try on all of them
+for (const ev of ['pointerdown', 'touchend', 'click']) {
+  document.addEventListener(ev, () => sound.unlock(), { passive: true, capture: true });
+}
+
+const THEME_COLORS = { dark: '#15130f', light: '#fbf7ef' };
 
 function applyTheme(theme: Theme): void {
   if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
+  // keep the browser/status bar color in sync with a forced theme
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
+    const media = m.getAttribute('media') ?? '';
+    m.content = theme === 'auto' ? (media.includes('light') ? THEME_COLORS.light : THEME_COLORS.dark) : THEME_COLORS[theme];
+  });
 }
 applyTheme(settings.theme);
 
@@ -114,6 +124,7 @@ function showSetup(game: GameDef): void {
       <div class="setup-art">${game.art}</div>
       <h1>${game.name}</h1>
       <p class="tag">${game.tagline}</p>
+      <ol class="rules">${game.rules.map((r) => `<li>${r}</li>`).join('')}</ol>
       <div class="opts">
         ${game.options
           .map(

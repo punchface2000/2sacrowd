@@ -82,7 +82,7 @@ describe('grabbing', () => {
     const g = new BeeOrHoney({}, 12);
     const now = until(g, 'bee');
     const r = g.tap(0, now + 200);
-    expect(r).toMatchObject({ kind: 'grab', item: 'bee', delta: -1 });
+    expect(r).toMatchObject({ kind: 'grab', item: 'bee', delta: 0 }); // already at the floor
     expect(g.getState().scores[0]).toBe(0);
   });
 
@@ -148,6 +148,23 @@ describe('grabbing', () => {
     const now = until(g, 'honey');
     g.tap(0, now + 100);
     expect(g.tap(1, now + 200).kind).toBe('ignored');
+  });
+});
+
+describe('tap timing', () => {
+  it('a tap timestamped before the item appeared is early even if processed after', () => {
+    const g = new BeeOrHoney({}, 41);
+    const t = g.itemAppearsAt;
+    g.tick(t + 50); // frame already showed the item
+    expect(g.getState().phase).toBe('showing');
+    expect(g.tap(0, t - 10).kind).toBe('early');
+    expect(g.getState().phase).toBe('showing');
+    expect(g.tap(1, t + 60).kind).toBe('grab');
+  });
+  it('bee reports -1 when the score actually drops', () => {
+    const g = new BeeOrHoney({ minScore: -5 }, 42);
+    const now = until(g, 'bee');
+    expect(g.tap(0, now + 10)).toMatchObject({ kind: 'grab', delta: -1 });
   });
 });
 
